@@ -6,10 +6,21 @@
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: #02012C;
+  --color-card-gradient: linearGradient('45deg', #4658D9, #2B1B9C);
+  --color-card: #3C3B5E;
+  --color-neutral0: #FFFFFF;
+  --color-neutral200: #D4D3D9;
+  --color-neutral300: #ACACB7;
+  --color-neutral600: #3C3B5E;
+  --color-neutral700: #302F4A;
+  --color-neutral800: #262540;
+  --color-neutral900: #02012C;
+  --color-gray: #D4D3D9;
+  --color-blue700: #2B1B9C;
+  --color-blue500: #4658D9;
+  --color-orange: #FF820A;
+  --color-violet: #02012C;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,5 +33,82 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer base {
+  h1 {
+    @apply text-8xl;
+    @apply font-semibold;
+    @apply italic;
+    @apply tracking-tight;
+    @apply leading-5
+  }
+
+  h2 {
+    @apply text-5xl;
+    @apply font-bold;
+    @apply tracking-normal;
+    @apply leading-6
+  }
+
+  h3 {
+    @apply text-3xl;
+    @apply font-light;
+    @apply tracking-normal;
+    @apply leading-5
+  }
+
+  h4 {
+    @apply text-2xl;
+    @apply font-bold;
+    @apply tracking-normal;
+    @apply leading-6;
+  }
+
+  h5 {
+    @apply text-xl;
+    @apply font-semibold;
+    @apply tracking-normal;
+    @apply leading-6;
+  }
+
+  h6 {
+    @apply text-xl;
+    @apply font-medium;
+    @apply tracking-normal;
+    @apply leading-6;
+  }
+}
+
+@layer components {
+  .p6 {
+    @apply font-medium;
+    @apply text-lg;
+    @apply tracking-normal;
+    @apply leading-6;
+  }
+
+  .p7 {
+    @apply font-medium;
+    @apply text-base;
+    @apply tracking-normal;
+    @apply leading-6;
+  }
+
+  .p8 {
+    @apply font-medium;
+    @apply text-sm;
+    @apply tracking-normal;
+    @apply leading-6;
+  }
+
+  .globalColor {
+    @apply text-white;
+  }
+
+  .cardPadding {
+    @apply pl-3;
+    @apply pr-4;
+    @apply py-[10px];
+  }
 }
