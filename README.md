@@ -1,7 +1,7 @@
 # Weather Now
 This is a Next.js application that provides real-time weather data for locations worldwide using the [Open-Meteo API](https://open-meteo.com/). The app detects your location automatically and displays current conditions, forecasts, and more.
 
-![Weather Now](WeatherNow.png)
+![Weather Now](image-1.png)
 
 ## Features
 
