@@ -1,18 +1,25 @@
 "use client";
 import React, { useState } from "react";
-import { PiGearBold } from "react-icons/pi";
+import { PiCloudFog, PiGearBold } from "react-icons/pi";
 import { RxCaretDown } from "react-icons/rx";
-import { CiSearch } from "react-icons/ci";
+import { CiCloudDrizzle, CiSearch } from "react-icons/ci";
 import Image from "next/image";
 import { FaCloud } from "react-icons/fa";
-import { BsFillCloudSnowFill } from "react-icons/bs";
+import { BsCloudDrizzle, BsFillCloudSnowFill } from "react-icons/bs";
 import { IoMdPartlySunny, IoMdSunny } from "react-icons/io";
-import { WiCloudyWindy } from "react-icons/wi";
+import { WiCloudyWindy, WiShowers, WiSnow } from "react-icons/wi";
 import { FaCloudRain } from "react-icons/fa6";
 import { LiaCheckSolid } from "react-icons/lia";
 import { fetchWeatherApi } from "openmeteo";
-import { GoDash } from "react-icons/go";
-import { MdNightlight } from "react-icons/md";
+import { GoDash, GoSun } from "react-icons/go";
+import { MdCloudySnowing, MdNightlight, MdThunderstorm } from "react-icons/md";
+import {
+  IoPartlySunnyOutline,
+  IoRainyOutline,
+  IoThunderstormOutline,
+} from "react-icons/io5";
+import { LuCloudRain } from "react-icons/lu";
+import { RiHeavyShowersLine } from "react-icons/ri";
 
 interface Result {
   id: number;
@@ -31,7 +38,9 @@ interface Weather {
   isDay: number;
   timeLine: Date;
   dailyTime: Date[];
+  dailyCodes: Float32Array<ArrayBufferLike> | null;
   hourlyTime: Date[];
+  hourlyCodes: Float32Array<ArrayBufferLike> | null;
   maxTemperature: Float32Array<ArrayBufferLike> | null;
   minTemperature: Float32Array<ArrayBufferLike> | null;
 }
@@ -183,6 +192,8 @@ const Home = () => {
         hourlyTime: weatherData.hourly.time,
         maxTemperature: weatherData?.daily.temperature_2m_max,
         minTemperature: weatherData?.daily.temperature_2m_min,
+        dailyCodes: weatherData?.daily.weather_code,
+        hourlyCodes: weatherData?.hourly.weather_code,
       });
 
       setHourlyHours(
@@ -200,7 +211,7 @@ const Home = () => {
           : null
       );
 
-      setTarget_Place(targetPlace)
+      setTarget_Place(targetPlace);
     } catch (error) {
       setErroredAPI(true);
     } finally {
@@ -209,6 +220,9 @@ const Home = () => {
       setPlace("");
     }
   };
+
+  console.log(weatherData?.dailyCodes);
+  console.log(typeof weatherData?.dailyCodes);
 
   return (
     <main className="bg-background globalColor min-h-screen max-h-fit">
@@ -461,7 +475,7 @@ const Home = () => {
 
           <div className="flex justify-between items-center cardPadding bg-neutral600 rounded-sm">
             <div className="flex justify-between items-center gap-2">
-              <FaCloud />
+              <IoMdPartlySunny />
               <p>
                 {hourlyHours[0]
                   ? hourlyHours[0].toLocaleTimeString([], {
@@ -604,7 +618,54 @@ const Home = () => {
                     ? "Fri"
                     : "Sat"}
                 </p>
-                <FaCloudRain />
+                {weatherData.dailyCodes ? (
+                  weatherData.dailyCodes[index] == 0 ? (
+                    <GoSun />
+                  ) : weatherData.dailyCodes[index] === 1 ||
+                    weatherData.dailyCodes[index] === 2 ||
+                    weatherData.dailyCodes[index] === 3 ? (
+                    <IoPartlySunnyOutline />
+                  ) : weatherData.dailyCodes[index] == 45 ||
+                    weatherData.dailyCodes[index] === 48 ? (
+                    <PiCloudFog />
+                  ) : weatherData.dailyCodes[index] == 51 ||
+                    weatherData.dailyCodes[index] === 53 ||
+                    weatherData.dailyCodes[index] === 55 ? (
+                    <CiCloudDrizzle />
+                  ) : weatherData.dailyCodes[index] == 56 ||
+                    weatherData.dailyCodes[index] === 57 ? (
+                    <BsCloudDrizzle />
+                  ) : weatherData.dailyCodes[index] == 61 ||
+                    weatherData.dailyCodes[index] === 63 ||
+                    weatherData.dailyCodes[index] === 65 ? (
+                    <IoRainyOutline />
+                  ) : weatherData.dailyCodes[index] == 66 ||
+                    weatherData.dailyCodes[index] === 67 ? (
+                    <LuCloudRain />
+                  ) : weatherData.dailyCodes[index] == 71 ||
+                    weatherData.dailyCodes[index] === 73 ||
+                    weatherData.dailyCodes[index] === 75 ? (
+                    <WiSnow />
+                  ) : weatherData.dailyCodes[index] == 77 ? (
+                    <MdCloudySnowing />
+                  ) : weatherData.dailyCodes[index] == 80 ||
+                    weatherData.dailyCodes[index] === 81 ||
+                    weatherData.dailyCodes[index] === 82 ? (
+                    <WiShowers />
+                  ) : weatherData.dailyCodes[index] == 85 ||
+                    weatherData.dailyCodes[index] === 86 ? (
+                    <RiHeavyShowersLine />
+                  ) : weatherData.dailyCodes[index] == 95 ? (
+                    <IoThunderstormOutline />
+                  ) : weatherData.dailyCodes[index] == 96 ||
+                    weatherData.dailyCodes[index] === 99 ? (
+                    <MdThunderstorm />
+                  ) : (
+                    "--"
+                  )
+                ) : (
+                  "--"
+                )}
                 <div className="flex justify-between gap-7">
                   <p>
                     {weatherData.maxTemperature
