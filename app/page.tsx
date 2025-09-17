@@ -12,12 +12,14 @@ import { FaCloudRain } from "react-icons/fa6";
 import { LiaCheckSolid } from "react-icons/lia";
 import { fetchWeatherApi } from "openmeteo";
 import { GoDash } from "react-icons/go";
+import { MdNightlight } from "react-icons/md";
 
 interface Result {
   id: number;
   name: string;
   latitude: number;
   longitude: number;
+  country?: string;
 }
 
 interface Weather {
@@ -46,6 +48,11 @@ const Home = () => {
   const [erroredAPI, setErroredAPI] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [weatherData, setWeatherData] = useState<Weather>();
+  const [hourlyHours, setHourlyHours] = useState<Date[]>([]);
+  const [hourlyTemperature, setHourlyTemperature] =
+    useState<Float32Array | null>();
+  const [targetPlace, setTargetPlace] = useState<Result>();
+  const [target_Place, setTarget_Place] = useState<Result>();
 
   const fetchLocation = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     e.preventDefault();
@@ -53,6 +60,8 @@ const Home = () => {
       `https://geocoding-api.open-meteo.com/v1/search/?name=${place}`
     );
     const data = await response.json();
+    setTargetPlace(data.results?.[0]);
+
     setSearchResults(data.results);
   };
 
@@ -71,6 +80,7 @@ const Home = () => {
     lat: number,
     lon: number
   ) => {
+    e.preventDefault();
     setFetching(true);
     setLoading(true);
     setSearchResults([]);
@@ -78,6 +88,9 @@ const Home = () => {
       const params = {
         latitude: lat,
         longitude: lon,
+        wind_speed_unit: "mph",
+        temperature_unit: "fahrenheit",
+        precipitation_unit: "inch",
         daily: ["temperature_2m_max", "temperature_2m_min", "weather_code"],
         hourly: [
           "temperature_2m",
@@ -93,12 +106,10 @@ const Home = () => {
           "precipitation",
           "is_day",
         ],
-        wind_speed_unit: "mph",
       };
       const url = "https://api.open-meteo.com/v1/forecast";
       const responses = await fetchWeatherApi(url, params);
       const response = responses[0];
-      console.log(response);
       const latitude = response.latitude();
       const longitude = response.longitude();
       const elevation = response.elevation();
@@ -174,21 +185,28 @@ const Home = () => {
         minTemperature: weatherData?.daily.temperature_2m_min,
       });
 
-      // const response = await fetch(
-      //   `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,weather_code&hourly=temperature_2m,relative_humidity_2m,precipitation,wind_speed_180m,weather_code&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation,is_day&wind_speed_unit=mph`
-      // );
-      // const data = await response.json();
-      // console.log(data);
-      // console.log(response.status);
+      setHourlyHours(
+        weatherData?.hourly?.time
+          .filter((x) => new Date(x).getHours() >= new Date().getHours())
+          .slice(0, 8)
+      );
+      hourlyHours.map((hour) =>
+        hour.getHours() > 12 ? hour.getHours() - 12 : hour.getHours()
+      );
 
-      // if (response.status === 404) {
-      //   setSearchNotFound(true);
-      // }
+      setHourlyTemperature(
+        weatherData?.hourly?.temperature_2m
+          ? weatherData.hourly.temperature_2m.slice(0, 8)
+          : null
+      );
+
+      setTarget_Place(targetPlace)
     } catch (error) {
       setErroredAPI(true);
     } finally {
       setFetching(false);
       setLoading(false);
+      setPlace("");
     }
   };
 
@@ -320,12 +338,28 @@ const Home = () => {
       <div className="canvas grid grid-cols-3 grid-rows-3 gap-10 w-full my-10 px-20 pb-5 overflow-x-clip">
         <div className="nowForecast rounded-lg p-3 pt-0 col-start-1 col-end-3 row-start-1 row-end-3 grid grid-cols-4 grid-rows-3 gap-10">
           <div className="col-start-1 relative col-end-5 row-start-1 row-end-3 bg-blue500 rounded-lg flex p-3 justify-between items-center">
-            <IoMdSunny className="text-orange absolute top-20 right-48 to-orange-300 text-5xl" />
-            <IoMdSunny className="text-orange absolute bottom-10 left-64" />
-            <IoMdSunny className="text-orange absolute top-5 left-72" />
+            {weatherData?.isDay ? (
+              <IoMdSunny className="text-orange absolute top-20 right-48 to-orange-300 text-5xl" />
+            ) : (
+              <MdNightlight className="text-orange absolute top-20 right-48 to-orange-300 text-5xl" />
+            )}
+            {weatherData?.isDay ? (
+              <IoMdSunny className="text-orange absolute bottom-10 left-64" />
+            ) : (
+              <MdNightlight className="text-orange absolute bottom-10 left-64" />
+            )}
+            {weatherData?.isDay ? (
+              <IoMdSunny className="text-orange absolute top-5 left-72" />
+            ) : (
+              <MdNightlight className="text-orange absolute top-5 left-72" />
+            )}
             <div>
-              <h5 className="">Berlin, Germany</h5>
-              <p className="p8">Tuesday, August 5, 2025</p>
+              <h5 className="">
+                {target_Place
+                  ? target_Place.name + ", " + target_Place.country
+                  : "--"}
+              </h5>
+              <p className="p8">{new Date().toDateString()}</p>
             </div>
             <h1>
               {Math.round(weatherData?.feelsLike ? weatherData.feelsLike : 0)}
@@ -428,61 +462,123 @@ const Home = () => {
           <div className="flex justify-between items-center cardPadding bg-neutral600 rounded-sm">
             <div className="flex justify-between items-center gap-2">
               <FaCloud />
-              <p>3 PM</p>
+              <p>
+                {hourlyHours[0]
+                  ? hourlyHours[0].toLocaleTimeString([], {
+                      hour: "2-digit",
+                    })
+                  : "--"}
+              </p>
             </div>
-            <p>20&deg;</p>
+            <p>
+              {hourlyTemperature ? Math.round(hourlyTemperature[0]) : "--"}&deg;
+            </p>
           </div>
           <div className="flex justify-between items-center cardPadding bg-neutral600 rounded-sm">
             <div className="flex justify-between items-center gap-2">
               <IoMdPartlySunny />
-              <p>4 PM</p>
+              <p>
+                {hourlyHours[1]
+                  ? hourlyHours[1].toLocaleTimeString([], {
+                      hour: "2-digit",
+                    })
+                  : "--"}
+              </p>
             </div>
-            <p>20&deg;</p>
+            <p>
+              {hourlyTemperature ? Math.round(hourlyTemperature[1]) : "--"}&deg;
+            </p>
           </div>
           <div className="flex justify-between items-center cardPadding bg-neutral600 rounded-sm">
             <div className="flex justify-between items-center gap-2">
               <IoMdSunny />
-              <p>4 PM</p>
+              <p>
+                {hourlyHours[2]
+                  ? hourlyHours[2].toLocaleTimeString([], {
+                      hour: "2-digit",
+                    })
+                  : "--"}
+              </p>
             </div>
-            <p>20&deg;</p>
+            <p>
+              {hourlyTemperature ? Math.round(hourlyTemperature[2]) : "--"}&deg;
+            </p>
           </div>
           <div className="flex justify-between items-center cardPadding bg-neutral600 rounded-sm">
             <div className="flex items-center justify-between gap-2">
               <BsFillCloudSnowFill />
-              <p>6 PM</p>
+              <p>
+                {hourlyHours[3]
+                  ? hourlyHours[3].toLocaleTimeString([], {
+                      hour: "2-digit",
+                    })
+                  : "--"}
+              </p>
             </div>
-            <p>20&deg;</p>
+            <p>
+              {hourlyTemperature ? Math.round(hourlyTemperature[3]) : "--"}&deg;
+            </p>
           </div>
           <div className="flex justify-between items-center cardPadding bg-neutral600 rounded-sm">
             <div className="flex items-center justify-between gap-2">
               <WiCloudyWindy />
-              <p>7 PM</p>
+              <p>
+                {hourlyHours[4]
+                  ? hourlyHours[4].toLocaleTimeString([], {
+                      hour: "2-digit",
+                    })
+                  : "--"}
+              </p>
             </div>
-            <p>20&deg;</p>
+            <p>
+              {hourlyTemperature ? Math.round(hourlyTemperature[4]) : "--"}&deg;
+            </p>
           </div>
           <div className="flex justify-between items-center cardPadding bg-neutral600 rounded-sm">
             <div className="flex justify-between items-center gap-2">
               <BsFillCloudSnowFill />
-              <p>8 PM</p>
+              <p>
+                {hourlyHours[5]
+                  ? hourlyHours[5].toLocaleTimeString([], {
+                      hour: "2-digit",
+                    })
+                  : "--"}
+              </p>
             </div>
-            <p>20&deg;</p>
+            <p>
+              {hourlyTemperature ? Math.round(hourlyTemperature[5]) : "--"}&deg;
+            </p>
           </div>
           <div className="flex justify-between items-center cardPadding bg-neutral600 rounded-sm">
             <div className="flex justify-between-between items-center gap-2">
               <FaCloud />
-              {
-                weatherData?.hourlyTime.filter(x => new Date(x).getHours() <= new Date().getHours()).reverse().slice(0,9).reverse().map((hour,index) => <p key={index}>{new Date(hour).getHours()}</p>)
-              }
-              <p>9 PM</p>
+
+              <p>
+                {hourlyHours[6]
+                  ? hourlyHours[6].toLocaleTimeString([], {
+                      hour: "2-digit",
+                    })
+                  : "--"}
+              </p>
             </div>
-            <p>20&deg;</p>
+            <p>
+              {hourlyTemperature ? Math.round(hourlyTemperature[6]) : "--"}&deg;
+            </p>
           </div>
           <div className="flex justify-between items-center cardPadding bg-neutral600 rounded-sm">
             <div className="flex items-center justify-between gap-2">
               <FaCloud />
-              <p>10 PM</p>
+              <p>
+                {hourlyHours[7]
+                  ? hourlyHours[7].toLocaleTimeString([], {
+                      hour: "2-digit",
+                    })
+                  : "--"}
+              </p>
             </div>
-            <p>20&deg;</p>
+            <p>
+              {hourlyTemperature ? Math.round(hourlyTemperature[7]) : "--"}&deg;
+            </p>
           </div>
         </div>
         <div className="dailyForecast rounded-lg col-start-1 col-end-3 row-start-3 row-end-4 flex flex-col gap-3">
