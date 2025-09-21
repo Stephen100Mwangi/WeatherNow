@@ -221,9 +221,6 @@ const Home = () => {
     }
   };
 
-  console.log(weatherData?.dailyCodes);
-  console.log(typeof weatherData?.dailyCodes);
-
   return (
     <main className="bg-background globalColor min-h-screen max-h-fit">
       <header className="flex relative justify-between p-10 px-20">
@@ -408,14 +405,8 @@ const Home = () => {
           <div className="col-start-4 col-end-5 row-start-3 row-end-4 bg-neutral600 p-3 rounded-md flex flex-col gap-5">
             <p>Precipitation</p>
             <h6>
-              {weatherData?.precipitation ? (
-                <>
-                  weatherData?.precipitation
-                  {imperial ? "in" : "mm"}
-                </>
-              ) : (
-                <GoDash />
-              )}{" "}
+              {weatherData?.precipitation || <GoDash />}{" "}
+              {imperial ? "in" : "mm"}
             </h6>
           </div>
         </div>
@@ -597,11 +588,11 @@ const Home = () => {
         </div>
         <div className="dailyForecast rounded-lg col-start-1 col-end-3 row-start-3 row-end-4 flex flex-col gap-3">
           <p>Daily Forecast</p>
-          <div className="flex justify-between items-center gap-2">
+          <div className="flex justify-between items-center">
             {weatherData?.dailyTime.map((time, index) => (
               <div
                 key={index}
-                className="flex flex-col gap-5 w-fit bg-neutral600 h-auto p-2 items-center justify-center rounded-lg"
+                className="flex flex-col gap-5 w-auto bg-neutral600 h-auto p-2 items-center justify-center rounded-lg"
               >
                 <p className="text-center">
                   {new Date(time).getDay() === 0
