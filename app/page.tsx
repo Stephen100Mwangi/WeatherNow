@@ -102,10 +102,6 @@ const Home = () => {
     setSearchResults(data.results);
   };
 
-  {
-    imperial ? console.log("Imperial selected") : console.log("Metric");
-  }
-
   const fetchWeatherData = async (
     e: React.FormEvent<HTMLElement>,
     lat: number,
@@ -257,7 +253,6 @@ const Home = () => {
       );
 
       setTarget_Place(targetPlace);
-      console.log(weatherData);
     } catch (error) {
       setErroredAPI(true);
     } finally {
