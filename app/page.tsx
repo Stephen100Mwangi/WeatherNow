@@ -1,25 +1,48 @@
 "use client";
 import React, { useState } from "react";
-import { PiCloudFog, PiGearBold } from "react-icons/pi";
+import {
+  PiCloudFog,
+  PiGearBold,
+  PiHeartThin,
+  PiMoonThin,
+} from "react-icons/pi";
 import { RxCaretDown } from "react-icons/rx";
-import { CiCloudDrizzle, CiSearch } from "react-icons/ci";
+import { CiCloudDrizzle, CiLight, CiSearch } from "react-icons/ci";
 import Image from "next/image";
 import { FaCloud } from "react-icons/fa";
-import { BsCloudDrizzle, BsFillCloudSnowFill } from "react-icons/bs";
-import { IoMdPartlySunny, IoMdSunny } from "react-icons/io";
-import { WiCloudyWindy, WiShowers, WiSnow } from "react-icons/wi";
+import {
+  BsCloudDrizzle,
+  BsFillCloudSnowFill,
+  BsSunrise,
+  BsSunset,
+} from "react-icons/bs";
+import { IoIosHeartEmpty, IoMdPartlySunny, IoMdSunny } from "react-icons/io";
+import {
+  WiCloudyWindy,
+  WiMoonAltWaningCrescent5,
+  WiShowers,
+  WiSnow,
+} from "react-icons/wi";
 import { FaCloudRain } from "react-icons/fa6";
 import { LiaCheckSolid } from "react-icons/lia";
 import { fetchWeatherApi } from "openmeteo";
 import { GoDash, GoSun } from "react-icons/go";
-import { MdCloudySnowing, MdNightlight, MdThunderstorm } from "react-icons/md";
 import {
+  MdCloudySnowing,
+  MdCompare,
+  MdNightlight,
+  MdThunderstorm,
+} from "react-icons/md";
+import {
+  IoHourglassOutline,
   IoPartlySunnyOutline,
   IoRainyOutline,
   IoThunderstormOutline,
 } from "react-icons/io5";
 import { LuCloudRain } from "react-icons/lu";
 import { RiHeavyShowersLine } from "react-icons/ri";
+import { FcLike } from "react-icons/fc";
+import Link from "next/link";
 
 interface Result {
   id: number;
@@ -43,6 +66,8 @@ interface Weather {
   hourlyCodes: Float32Array<ArrayBufferLike> | null;
   maxTemperature: Float32Array<ArrayBufferLike> | null;
   minTemperature: Float32Array<ArrayBufferLike> | null;
+  sunRises: Date[] | null;
+  sunSets: Date[] | null;
 }
 
 const Home = () => {
@@ -62,6 +87,9 @@ const Home = () => {
     useState<Float32Array | null>();
   const [targetPlace, setTargetPlace] = useState<Result>();
   const [target_Place, setTarget_Place] = useState<Result>();
+  const [showSun, setShowSun] = useState(false);
+  const [toggleTheme, setToggleTheme] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState("darkTheme");
 
   const fetchLocation = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     e.preventDefault();
@@ -74,14 +102,8 @@ const Home = () => {
     setSearchResults(data.results);
   };
 
-  function debounce(callback: () => void, delay: number) {
-    let timer: NodeJS.Timeout;
-    return function () {
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        callback();
-      }, delay);
-    };
+  {
+    imperial ? console.log("Imperial selected") : console.log("Metric");
   }
 
   const fetchWeatherData = async (
@@ -97,10 +119,16 @@ const Home = () => {
       const params = {
         latitude: lat,
         longitude: lon,
-        wind_speed_unit: "mph",
-        temperature_unit: "fahrenheit",
-        precipitation_unit: "inch",
-        daily: ["temperature_2m_max", "temperature_2m_min", "weather_code"],
+        wind_speed_unit: imperial && "mph",
+        temperature_unit: imperial && "fahrenheit",
+        precipitation_unit: imperial && "inch",
+        daily: [
+          "temperature_2m_max",
+          "temperature_2m_min",
+          "weather_code",
+          "sunrise",
+          "sunset",
+        ],
         hourly: [
           "temperature_2m",
           "relative_humidity_2m",
@@ -119,14 +147,15 @@ const Home = () => {
       const url = "https://api.open-meteo.com/v1/forecast";
       const responses = await fetchWeatherApi(url, params);
       const response = responses[0];
-      const latitude = response.latitude();
-      const longitude = response.longitude();
-      const elevation = response.elevation();
       const utcOffsetSeconds = response.utcOffsetSeconds();
 
       const current = response.current()!;
       const hourly = response.hourly()!;
       const daily = response.daily()!;
+
+      // Define Int64 variables so they can be processed accordingly
+      const sunrise = daily.variables(0)!;
+      const sunset = daily.variables(1)!;
 
       const weatherData = {
         current: {
@@ -176,6 +205,20 @@ const Home = () => {
           temperature_2m_max: daily.variables(0)!.valuesArray(),
           temperature_2m_min: daily.variables(1)!.valuesArray(),
           weather_code: daily.variables(2)!.valuesArray(),
+          // Map Int64 values to according structure
+          sunrise: [...Array(sunrise.valuesInt64Length())].map(
+            (_, i) =>
+              new Date(
+                (Number(sunrise.valuesInt64(i)) + utcOffsetSeconds) * 1000
+              )
+          ),
+          // Map Int64 values to according structure
+          sunset: [...Array(sunset.valuesInt64Length())].map(
+            (_, i) =>
+              new Date(
+                (Number(sunset.valuesInt64(i)) + utcOffsetSeconds) * 1000
+              )
+          ),
         },
       };
 
@@ -194,6 +237,8 @@ const Home = () => {
         minTemperature: weatherData?.daily.temperature_2m_min,
         dailyCodes: weatherData?.daily.weather_code,
         hourlyCodes: weatherData?.hourly.weather_code,
+        sunRises: weatherData.daily.sunrise,
+        sunSets: weatherData.daily.sunset,
       });
 
       setHourlyHours(
@@ -212,6 +257,7 @@ const Home = () => {
       );
 
       setTarget_Place(targetPlace);
+      console.log(weatherData);
     } catch (error) {
       setErroredAPI(true);
     } finally {
@@ -221,85 +267,154 @@ const Home = () => {
     }
   };
 
-  console.log(weatherData?.dailyCodes);
-  console.log(typeof weatherData?.dailyCodes);
-
   return (
-    <main className="bg-background globalColor min-h-screen max-h-fit">
+    <main className="dark:bg-background bg-neutral-50 globalColor min-h-screen max-h-fit">
       <header className="flex relative justify-between p-10 px-20">
+        <div className="theme flex flex-col absolute right-0.5 w-20 justify-end items-end top-10">
+          <div
+            className="mb-5 cursor-pointer"
+            onClick={() => setToggleTheme(!toggleTheme)}
+          >
+            {selectedTheme && selectedTheme === "lightTheme" && (
+              <CiLight className="text-xl" />
+            )}
+            {selectedTheme && selectedTheme === "darkTheme" && (
+              <PiMoonThin className="text-xl" />
+            )}
+            {selectedTheme && selectedTheme === "systemTheme" && (
+              <WiMoonAltWaningCrescent5 className="text-xl" />
+            )}
+          </div>
+
+          {toggleTheme && (
+            <div className="flex flex-col w-20 gap-3 bg-neutral600 p-2 rounded-md">
+              <div
+                className="flex gap-2 cursor-pointer"
+                onClick={() => setSelectedTheme("lightTheme")}
+              >
+                <CiLight className="text-xl" />
+                <p className="text-xs font-thin">Light</p>
+              </div>
+              <div
+                className="flex gap-2 cursor-pointer"
+                onClick={() => setSelectedTheme("darkTheme")}
+              >
+                <PiMoonThin className="text-xl" />
+                <p className="text-xs font-thin">Dark</p>
+              </div>
+              <div
+                className="flex gap-2 cursor-pointer"
+                onClick={() => setSelectedTheme("systemTheme")}
+              >
+                <WiMoonAltWaningCrescent5 className="text-xl" />
+                <p className="text-xs font-thin">System</p>
+              </div>
+            </div>
+          )}
+        </div>
         <div className="flex items-center justify-center gap-3">
           <Image src="/WeatherLogo.png" alt="Logo" width={40} height={40} />
           <h4 className="font-">Weather Now</h4>
         </div>
-        <div
-          onClick={() => setToggleUnits(!toggleUnits)}
-          className="select flex items-center cursor-pointer gap-2 rounded-sm justify-center bg-neutral600 px-2"
-        >
-          <PiGearBold />
-          <p className="p8">Units</p>
-          <RxCaretDown />
-        </div>
-        {toggleUnits && (
-          <div className="absolute right-20 bg-neutral800 border border-white w-fit p-3 rounded-md top-20 shadow-sm flex flex-col gap-2 z-50">
-            <p
-              onClick={() => setImperial(!imperial)}
-              className="font-bold cursor-pointer rounded-sm pl-2 hover:bg-neutral600"
-            >
-              {imperial ? "Switch to Metric" : "Switch to Imperial"}
-            </p>
-            <p className="text-xs font-thin pl-2">Temperature</p>
-            <p
-              className={`${
-                !imperial && "bg-neutral600 rounded-sm"
-              } pl-2 cursor-pointer flex p7 justify-start w-56 items-center`}
-            >
-              <span className="w-48">Celsius(&deg;C)</span>
-              {!imperial && <LiaCheckSolid />}
-            </p>
-            <p
-              className={`${
-                imperial && "bg-neutral600 rounded-sm"
-              } pl-2 cursor-pointer flex p7 justify-start w-56 items-center`}
-            >
-              <span className="w-48">Fahrenheit(&deg;F)</span>
-              {imperial && <LiaCheckSolid />}
-            </p>
-            <p className="text-xs font-thin pl-2">Wind speed</p>
-            <p
-              className={`${
-                !imperial && "bg-neutral600 rounded-sm"
-              } pl-2 cursor-pointer flex p7 justify-start w-56 items-center`}
-            >
-              <span className="w-48">km/h</span>
-              {!imperial && <LiaCheckSolid />}
-            </p>
-            <p
-              className={`${
-                imperial && "bg-neutral600 rounded-sm"
-              } pl-2 cursor-pointer flex p7 justify-start w-56 items-center`}
-            >
-              <span className="w-48">mph</span>
-              {imperial && <LiaCheckSolid />}
-            </p>
-            <p className="text-xs font-thin pl-2">Precipitation</p>
-            <p
-              className={`${
-                !imperial && "bg-neutral600 rounded-sm"
-              } pl-2 cursor-pointer flex p7 justify-start w-56 items-center`}
-            >
-              <span className="w-48">Millimeters(mm)</span>
-              {!imperial && <LiaCheckSolid />}
-            </p>
-            <p
-              className={`${
-                imperial && "bg-neutral600 rounded-sm"
-              } pl-2 cursor-pointer  flex p7 justify-start w-56 items-center`}
-            >
-              <span className="w-48">Inches(in)</span>
-              {imperial && <LiaCheckSolid />}
-            </p>
+
+        <div className="flex gap-10 my-auto items-center justify-center">
+          <Link href={"/compare-locations"}>
+            <MdCompare className="text-xl" />
+          </Link>
+          <Link href={"/favorites"}>
+            <IoIosHeartEmpty className="text-xl" />
+          </Link>
+          <div className="relative w-fit">
+            <IoHourglassOutline
+              className="cursor-pointer text-xl"
+              onClick={() => setShowSun(!showSun)}
+            />
+            {showSun && (
+              <div className="flex absolute bg-neutral600 w-24 top-10 p-2 rounded-md flex-col space-y-2">
+                <div className="div w-fit flex gap-2 items-center">
+                  <BsSunrise />
+                  <p className="text-xs font-thin">6:34 AM</p>
+                </div>
+                <div className="div w-fit flex gap-2 items-center">
+                  <BsSunset />
+                  <p className="text-xs font-thin">6:27 PM</p>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+
+          <div
+            onClick={() => setToggleUnits(!toggleUnits)}
+            className="select flex items-center cursor-pointer gap-2 rounded-sm justify-center bg-neutral600 px-4 py-3"
+          >
+            <PiGearBold className="text-xl" />
+            <p className="p8">Units</p>
+            <RxCaretDown />
+          </div>
+          {toggleUnits && (
+            <div className="absolute right-20 bg-neutral800 border border-white w-fit p-3 rounded-md top-20 shadow-sm flex flex-col gap-2 z-50">
+              <p
+                onClick={weatherData ? () => setImperial(!imperial) : () => {}}
+                className={`font-bold cursor-pointer rounded-sm pl-2 hover:bg-neutral600 ${
+                  weatherData ? "cursor-pointer" : "cursor-wait"
+                }`}
+              >
+                {imperial ? "Switch to Metric" : "Switch to Imperial"}
+              </p>
+              <p className="text-xs font-thin pl-2">Temperature</p>
+              <p
+                className={`${
+                  !imperial && "bg-neutral600 rounded-sm"
+                } pl-2 cursor-pointer flex p7 justify-start w-56 items-center`}
+              >
+                <span className="w-48">Celsius(&deg;C)</span>
+                {!imperial && <LiaCheckSolid />}
+              </p>
+              <p
+                className={`${
+                  imperial && "bg-neutral600 rounded-sm"
+                } pl-2 cursor-pointer flex p7 justify-start w-56 items-center`}
+              >
+                <span className="w-48">Fahrenheit(&deg;F)</span>
+                {imperial && <LiaCheckSolid />}
+              </p>
+              <p className="text-xs font-thin pl-2">Wind speed</p>
+              <p
+                className={`${
+                  !imperial && "bg-neutral600 rounded-sm"
+                } pl-2 cursor-pointer flex p7 justify-start w-56 items-center`}
+              >
+                <span className="w-48">km/h</span>
+                {!imperial && <LiaCheckSolid />}
+              </p>
+              <p
+                className={`${
+                  imperial && "bg-neutral600 rounded-sm"
+                } pl-2 cursor-pointer flex p7 justify-start w-56 items-center`}
+              >
+                <span className="w-48">mph</span>
+                {imperial && <LiaCheckSolid />}
+              </p>
+              <p className="text-xs font-thin pl-2">Precipitation</p>
+              <p
+                className={`${
+                  !imperial && "bg-neutral600 rounded-sm"
+                } pl-2 cursor-pointer flex p7 justify-start w-56 items-center`}
+              >
+                <span className="w-48">Millimeters(mm)</span>
+                {!imperial && <LiaCheckSolid />}
+              </p>
+              <p
+                className={`${
+                  imperial && "bg-neutral600 rounded-sm"
+                } pl-2 cursor-pointer  flex p7 justify-start w-56 items-center`}
+              >
+                <span className="w-48">Inches(in)</span>
+                {imperial && <LiaCheckSolid />}
+              </p>
+            </div>
+          )}
+        </div>
       </header>
 
       <h2 className="text-center my-10 font-BG">
@@ -352,6 +467,10 @@ const Home = () => {
       <div className="canvas grid grid-cols-3 grid-rows-3 gap-10 w-full my-10 px-20 pb-5 overflow-x-clip">
         <div className="nowForecast rounded-lg p-3 pt-0 col-start-1 col-end-3 row-start-1 row-end-3 grid grid-cols-4 grid-rows-3 gap-10">
           <div className="col-start-1 relative col-end-5 row-start-1 row-end-3 bg-blue500 rounded-lg flex p-3 justify-between items-center">
+            <PiHeartThin
+              title="Mark as favorite"
+              className="absolute top-5 cursor-pointer right-5"
+            />
             {weatherData?.isDay ? (
               <IoMdSunny className="text-orange absolute top-20 right-48 to-orange-300 text-5xl" />
             ) : (
@@ -376,19 +495,30 @@ const Home = () => {
               <p className="p8">{new Date().toDateString()}</p>
             </div>
             <h1>
-              {Math.round(weatherData?.feelsLike ? weatherData.feelsLike : 0)}
+              {weatherData?.feelsLike !== null &&
+              weatherData?.feelsLike !== undefined
+                ? imperial
+                  ? Math.round(weatherData?.feelsLike)
+                  : ((Math.round(weatherData?.feelsLike - 32) * 5) / 9).toFixed(
+                      0
+                    )
+                : ""}
               &deg;
             </h1>
           </div>
           <div className="col-start-1 col-end-2 row-start-3 row-end-4 bg-neutral600 p-3 rounded-md flex flex-col gap-5">
             <p>Feels Like</p>
             <h6>
-              {weatherData?.feelsLike ? (
-                Math.round(weatherData?.feelsLike)
+              {weatherData?.feelsLike !== undefined &&
+              weatherData?.feelsLike !== null ? (
+                imperial ? (
+                  Math.round(weatherData.feelsLike)
+                ) : (
+                  ((Math.round(weatherData.feelsLike - 32) * 5) / 9).toFixed(0)
+                )
               ) : (
                 <GoDash />
-              )}
-
+              )}{" "}
               {imperial ? "°F" : "°C"}
             </h6>
           </div>
@@ -401,21 +531,34 @@ const Home = () => {
           <div className="col-start-3 col-end-4 row-start-3 row-end-4 bg-neutral600 p-3 rounded-md flex flex-col gap-5">
             <p>Wind</p>
             <h6>
-              {weatherData?.wind ? Math.round(weatherData?.wind) : <GoDash />}{" "}
+              {weatherData?.wind !== undefined && weatherData?.wind !== null ? (
+                imperial ? (
+                  Math.round(weatherData.wind)
+                ) : (
+                  Math.round(0.625 * weatherData.wind)
+                )
+              ) : (
+                <GoDash />
+              )}{" "}
               {imperial ? "mph" : "km/h"}
             </h6>
           </div>
           <div className="col-start-4 col-end-5 row-start-3 row-end-4 bg-neutral600 p-3 rounded-md flex flex-col gap-5">
             <p>Precipitation</p>
             <h6>
-              {weatherData?.precipitation ? (
-                <>
-                  weatherData?.precipitation
-                  {imperial ? "in" : "mm"}
-                </>
+              {weatherData?.precipitation !== undefined &&
+              weatherData.precipitation !== null ? (
+                imperial ? (
+                  Math.round(weatherData?.precipitation).toFixed(2)
+                ) : (
+                  Math.round(
+                    weatherData?.precipitation * 0.03937007874
+                  ).toFixed(2)
+                )
               ) : (
-                <GoDash />
-              )}{" "}
+                <GoDash></GoDash>
+              )}
+              {imperial ? " in" : " mm"}
             </h6>
           </div>
         </div>
