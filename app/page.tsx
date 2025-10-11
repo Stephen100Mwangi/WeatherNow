@@ -735,11 +735,11 @@ const Home = () => {
         </div>
         <div className="dailyForecast rounded-lg col-start-1 col-end-3 row-start-3 row-end-4 flex flex-col gap-3">
           <p>Daily Forecast</p>
-          <div className="flex justify-between items-center gap-2">
+          <div className="flex justify-between items-center">
             {weatherData?.dailyTime.map((time, index) => (
               <div
                 key={index}
-                className="flex flex-col gap-5 w-fit bg-neutral600 h-auto p-2 items-center justify-center rounded-lg"
+                className="flex flex-col gap-5 w-auto bg-neutral600 h-auto p-2 items-center justify-center rounded-lg"
               >
                 <p className="text-center">
                   {new Date(time).getDay() === 0
